@@ -1,0 +1,7 @@
+[package]
+name = "simplex"
+version = "0.1.0"
+authors = ["gray"]
+
+[dependencies]
+rand = "0.3"
