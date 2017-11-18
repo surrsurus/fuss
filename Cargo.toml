@@ -1,6 +1,6 @@
 [package]
 name = "fuss"
-version = "0.2"
+version = "0.2.0"
 authors = ["gray"]
 
 [dependencies]
