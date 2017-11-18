@@ -78,21 +78,6 @@ impl Simplex {
   }
 
   ///
-  /// Generate the permutation table
-  /// 
-  /// This method will overwrite the `Simplex`'s current `perm` vector
-  /// with another random permutation table used by `noise_2d()` and
-  /// `noise_3d`
-  /// 
-  pub fn generate_perms(&mut self) {
-    let p : Vec<u8> = StdRng::from_seed(&self.seed).gen_iter().take(256).collect::<Vec<u8>>();
-    self.perm = Vec::<u8>::new();
-    for i in 0..512 {
-      self.perm.push(p[(i & 255) as usize]);
-    }
-  }
-
-  ///
   /// Seed the random number generator with a specific 
   /// seed
   /// 
@@ -126,6 +111,21 @@ impl Simplex {
   }
 
   ///
+  /// Generate the permutation table
+  /// 
+  /// This method will overwrite the `Simplex`'s current `perm` vector
+  /// with another random permutation table used by `noise_2d()` and
+  /// `noise_3d`
+  /// 
+  fn generate_perms(&mut self) {
+    let p : Vec<u8> = StdRng::from_seed(&self.seed).gen_iter().take(256).collect::<Vec<u8>>();
+    self.perm = Vec::<u8>::new();
+    for i in 0..512 {
+      self.perm.push(p[(i & 255) as usize]);
+    }
+  }
+
+  ///
   /// Find dot product of a vector in 2 dimensions
   ///
   #[inline]
@@ -151,7 +151,7 @@ impl Simplex {
   /// ```
   /// use simplex::Simplex;
   /// 
-  /// let mut sn = Simplex::new();
+  /// let sn = Simplex::new();
   /// 
   /// let mut luminance = Vec::<Vec<f32>>::new();
   /// for x in 0..100 {
@@ -192,7 +192,7 @@ impl Simplex {
   /// ```
   /// use simplex::Simplex;
   /// 
-  /// let mut sn = Simplex::new();
+  /// let sn = Simplex::new();
   /// 
   /// let mut luminance = Vec::<Vec<Vec<f32>>>::new();
   /// for x in 0..10 {
@@ -236,27 +236,25 @@ impl Simplex {
   /// ```
   /// use simplex::Simplex;
   /// 
-  /// let sn = Simplex::new();
+  /// let sn = Simplex::from_seed(vec![5, 3, 2, 1, 1]);
   /// println!("{}", sn.noise_2d(50.1912, 30.50102));
   /// 
   /// // Simplex will return the same thing for the same points
   /// assert_eq!(sn.noise_2d(1.5, -0.5), sn.noise_2d(1.5, -0.5));
-  /// assert_eq!(sn.noise_3d(1.5, -0.5, 2.1), sn.noise_3d(1.5, -0.5, 2.1));
   /// 
-  /// let other_sn = Simplex::new();
+  /// let other_sn = Simplex::from_seed(vec![0, 1, 2, 3, 4, 5]);
   /// 
   /// // However each `Simplex` has it's own set of permutations, therefore
   /// // each one is different. If you want consistency, try the `from_seed()` method.
   /// assert!(sn.noise_2d(1.5, -0.5) != other_sn.noise_2d(1.5, -0.5));
-  /// assert!(sn.noise_3d(1.5, -0.5, 2.1) != other_sn.noise_3d(1.5, -0.5, 2.1));
   /// ```
   ///
   pub fn noise_2d(&self, xin: f32, yin: f32) -> f32 {
 
     // Noise contributions from the three corners 
-    let mut n0 : f32;
-    let mut n1 : f32;
-    let mut n2 : f32;
+    let n0 : f32;
+    let n1 : f32;
+    let n2 : f32;
 
     // Hairy factor for 2D 
     let s = (xin + yin) * F2;
@@ -349,7 +347,16 @@ impl Simplex {
   /// use simplex::Simplex;
   /// 
   /// let sn = Simplex::new();
-  /// println!("{}", sn.noise_3d(50.1912, 30.50102, -121.5));
+  /// println!("{}", sn.noise_2d(50.1912, 30.50102));
+  /// 
+  /// // Simplex will return the same thing for the same points
+  /// assert_eq!(sn.noise_3d(1.5, -0.5, 2.1), sn.noise_3d(1.5, -0.5, 2.1));
+  /// 
+  /// let other_sn = Simplex::new();
+  /// 
+  /// // However each `Simplex` has it's own set of permutations, therefore
+  /// // each one is different. If you want consistency, try the `from_seed()` method.
+  /// assert!(sn.noise_3d(1.5, -0.5, 2.1) != other_sn.noise_3d(1.5, -0.5, 2.1));
   /// ```
   /// 
   pub fn noise_3d(&self, xin: f32, yin: f32, zin: f32) -> f32 {
@@ -368,14 +375,11 @@ impl Simplex {
 
     // Unskew the cell origin back to (x,y,z) space
     let t = (i + j + k) * G3; 
-    let X0 = i - t;  
-    let Y0 = j - t; 
-    let Z0 = k - t; 
 
     // The x,y,z distances from the cell origin
-    let x0 = xin - X0;  
-    let y0 = yin - Y0; 
-    let z0 = zin - Z0; 
+    let x0 = xin - (i - t);  
+    let y0 = yin - (j - t); 
+    let z0 = zin - (k - t); 
 
     // For the 3D case, the simplex shape is a slightly 
     // irregular tetrahedron. 
@@ -383,14 +387,14 @@ impl Simplex {
     // Determine which simplex we are in. 
 
     // Offsets for second corner of simplex in (i,j,k) coords 
-    let mut i1 : i32;
-    let mut j1 : i32;
-    let mut k1 : i32; 
+    let i1 : i32;
+    let j1 : i32;
+    let k1 : i32; 
 
     // Offsets for third corner of simplex in (i,j,k) coords 
-    let mut i2 : i32;
-    let mut j2 : i32;
-    let mut k2 : i32;
+    let i2 : i32;
+    let j2 : i32;
+    let k2 : i32;
 
     if x0 >= y0 { 
       if y0 >= z0 { 
