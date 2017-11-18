@@ -4,6 +4,8 @@ Fuss - Small, lightweight simplex noise generator for Rust.
 
 This library only provides functionality for generating 2D and 3D simplex noise, as well as the ability to normalize the noise through sum octaves (fractal Brownian motion).
 
+[View the Docs](http://surrsur.us/fuss/fuss/index.html).
+
 ## Getting Started
 
 ### Prerequisites
