@@ -1,6 +1,9 @@
 //!
 //! Simple-Simplex - Small, lightweight simplex noise generator for Rust
 //! 
+//! Ported from http://staffwww.itn.liu.se/~stegu/simplexnoise/simplexnoise.pdf
+//! originally in Java.
+//! 
 
 #![crate_type = "lib"]
 #![crate_name = "simplex"]
@@ -12,8 +15,15 @@ use rand::{thread_rng, SeedableRng, Rng, StdRng};
 
 // Constants
 
-const G2 : f32 = 0.211324865;
+// Skew 2D
 const F2 : f32 = 0.366025403;
+// Unskew 2D
+const G2 : f32 = 0.211324865;
+
+// Skew 3D
+const F3 : f32 = 1.0/3.0;
+// Unskew 3D
+const G3 : f32 = 1.0/6.0;
 
 const GRAD3: [(i8, i8, i8); 12] = [
   (1, 1, 0), (-1, 1, 0), (1, -1, 0), (-1, -1, 0),  
@@ -95,10 +105,15 @@ impl Simplex {
   /// use simplex::Simplex;
   /// 
   /// let mut sn = Simplex::from_seed(vec![1, 2, 3]);
-  /// 
   /// let mut other_sn = Simplex::from_seed(vec![1, 2, 3]);
   /// 
   /// assert_eq!(other_sn.noise_2d(1.0, 14.2), sn.noise_2d(1.0, 14.2));
+  /// assert_eq!(other_sn.noise_3d(1.0, 14.2, -5.4), sn.noise_3d(1.0, 14.2, -5.4));
+  /// 
+  /// sn = Simplex::from_seed(vec![4, 5, 6]);
+  /// let mut other_sn = Simplex::from_seed(vec![1, 2, 3]);
+  /// assert!(other_sn.noise_2d(1.0, 14.2) != sn.noise_2d(1.0, 14.2));
+  /// assert!(other_sn.noise_3d(1.0, 14.2, -5.4) != sn.noise_3d(1.0, 14.2, -5.4));
   /// ```
   /// 
   pub fn from_seed(seed: Vec<usize>) -> Simplex {
@@ -141,55 +156,80 @@ impl Simplex {
   /// 
   /// // Simplex will return the same thing for the same points
   /// assert_eq!(sn.noise_2d(1.5, -0.5), sn.noise_2d(1.5, -0.5));
+  /// assert_eq!(sn.noise_3d(1.5, -0.5, 2.1), sn.noise_3d(1.5, -0.5, 2.1));
   /// 
   /// let other_sn = Simplex::new();
   /// 
   /// // However each `Simplex` has it's own set of permutations, therefore
   /// // each one is different. If you want consistency, try the `from_seed()` method.
   /// assert!(sn.noise_2d(1.5, -0.5) != other_sn.noise_2d(1.5, -0.5));
+  /// assert!(sn.noise_3d(1.5, -0.5, 2.1) != other_sn.noise_3d(1.5, -0.5, 2.1));
   /// ```
   ///
   pub fn noise_2d(&self, xin: f32, yin: f32) -> f32 {
+
+    // Noise contributions from the three corners 
     let mut n0 : f32;
     let mut n1 : f32;
     let mut n2 : f32;
 
+    // Hairy factor for 2D 
     let s = (xin + yin) * F2;
     let i = (xin + s).floor() as i32;
     let j = (yin + s).floor() as i32;
 
     let t = (i + j) as f32 * G2;
-    let X0 = i as f32 -t; // Unskew the cell origin back to (x,y) space 
-    let Y0 = j as f32 -t; 
-    let x0 = xin-X0; // The x,y distances from the cell origin 
-    let y0 = yin-Y0;
-    let i1 : f32;
-    let j1 : f32; // Offsets for second (middle) corner of simplex in (i,j) coords 
-    if x0>y0 {
-      i1 = 1.0; j1 = 0.0;
-    } // lower triangle, XY order: (0,0)->(1,0)->(1,1) 
-    else {
-      i1=0.0; 
-      j1=1.0;
+
+    // Unskew the cell origin back to (x,y) space 
+    // and get he x,y distances from the cell origin 
+    let x0 = xin - (i as f32 - t); 
+    let y0 = yin - (j as f32 - t); 
+
+    // For the 2D case, the simplex shape is an equilateral triangle. 
+    // Determine which simplex we are in. 
+
+    // Offsets for second (middle) corner of simplex in (i,j) coords 
+    let i1 : i32;
+    let j1 : i32; 
+
+    // lower triangle, XY order: (0,0)->(1,0)->(1,1) 
+    if x0 > y0 {
+      i1 = 1;
+      j1 = 0;
     }
-    let x1 = x0 - i1 + G2; // Offsets for middle corner in (x,y) unskewed coords 
-    let y1 = y0 - j1 + G2; 
-    let x2 = x0 - 1.0 + 2.0 * G2; // Offsets for last corner in (x,y) unskewed coords 
+    // upper triangle, YX order: (0,0)->(0,1)->(1,1) 
+    else {
+      i1 = 0; 
+      j1 = 1;
+    }
+
+    // A step of (1,0) in (i,j) means a step of (1-c,-c) in (x,y), and 
+    // a step of (0,1) in (i,j) means a step of (-c,1-c) in (x,y), where 
+    // c = (3-sqrt(3))/6 
+
+    // Offsets for middle corner in (x,y) unskewed coords 
+    let x1 = x0 - i1 as f32 + G2; 
+    let y1 = y0 - j1 as f32 + G2; 
+
+    // Offsets for last corner in (x,y) unskewed coords 
+    let x2 = x0 - 1.0 + 2.0 * G2; 
     let y2 = y0 - 1.0 + 2.0 * G2; 
-    let ii = (i & 255) as f32; 
-    let jj = (j & 255) as f32; 
-    let gi0 = self.perm[(ii as i32 + self.perm[jj as usize] as i32) as usize ] % 12; 
-    let gi1 = self.perm[(ii as i32 + i1 as i32 +self.perm[(jj + j1) as usize] as i32) as usize ] % 12; 
-    let gi2 = self.perm[(ii as i32 + 1 + self.perm[ (jj + 1.0) as usize] as i32) as usize] % 12; 
+
+    // Work out the hashed gradient indices of the three simplex corners 
+    let ii = i & 255; 
+    let jj = j & 255; 
+    let gi0 = self.perm[(ii +    self.perm[jj as usize] as i32) as usize ] % 12; 
+    let gi1 = self.perm[(ii + i1 + self.perm[(jj + j1) as usize] as i32) as usize ] % 12; 
+    let gi2 = self.perm[(ii + 1 + self.perm[ (jj + 1) as usize] as i32) as usize] % 12; 
     
     let mut t0 = 0.5 - x0*x0-y0*y0; 
     if t0 < 0.0 {
       n0 = 0.0;
-    } 
-    else { 
+    } else { 
       t0 *= t0; 
-      n0 = t0 * t0 * self.dot2(GRAD3[gi0 as usize], x0, y0);  // (x,y) of GRAD3 used for 2D gradient 
+      n0 = t0 * t0 * self.dot2(GRAD3[gi0 as usize], x0, y0);
     } 
+
     let mut t1 = 0.5 - x1*x1-y1*y1; 
     if t1 < 0. { 
       n1 = 0.0;
@@ -197,6 +237,7 @@ impl Simplex {
       t1 *= t1; 
       n1 = t1 * t1 * self.dot2(GRAD3[gi1 as usize], x1, y1); 
     }
+
     let mut t2 = 0.5 - x2*x2-y2*y2; 
     if t2 < 0.0 { 
       n2 = 0.0; 
@@ -208,7 +249,6 @@ impl Simplex {
 
     // Add contributions from each corner to get the final noise value. 
     // The result is scaled to return values in the interval [-1,1]. 
-
     return 70.0 * (n0 + n1 + n2);
 
   }
@@ -223,12 +263,174 @@ impl Simplex {
   /// ```
   /// use simplex::Simplex;
   /// 
-  /// // let sn = Simplex::new();
-  /// // println!("{}", sn.noise_3d(50.1912, 30.50102, -121.5));
+  /// let sn = Simplex::new();
+  /// println!("{}", sn.noise_3d(50.1912, 30.50102, -121.5));
   /// ```
   /// 
   pub fn noise_3d(&self, xin: f32, yin: f32, zin: f32) -> f32 {
-    unimplemented!();
+
+    // Noise contributions from the four corners 
+    let n0 : f32;
+    let n1 : f32;
+    let n2 : f32;
+    let n3 : f32;
+
+    // Very nice and simple skew factor for 3D 
+    let s = (xin + yin + zin) * F3; 
+    let i = (xin + s).floor(); 
+    let j = (yin + s).floor(); 
+    let k = (zin + s).floor(); 
+
+    // Unskew the cell origin back to (x,y,z) space
+    let t = (i + j + k) * G3; 
+    let X0 = i - t;  
+    let Y0 = j - t; 
+    let Z0 = k - t; 
+
+    // The x,y,z distances from the cell origin
+    let x0 = xin - X0;  
+    let y0 = yin - Y0; 
+    let z0 = zin - Z0; 
+
+    // For the 3D case, the simplex shape is a slightly 
+    // irregular tetrahedron. 
+
+    // Determine which simplex we are in. 
+
+    // Offsets for second corner of simplex in (i,j,k) coords 
+    let mut i1 : i32;
+    let mut j1 : i32;
+    let mut k1 : i32; 
+
+    // Offsets for third corner of simplex in (i,j,k) coords 
+    let mut i2 : i32;
+    let mut j2 : i32;
+    let mut k2 : i32;
+
+    if x0 >= y0 { 
+      if y0 >= z0 { 
+        // X Y Z order 
+        i1 = 1; 
+        j1 = 0; 
+        k1 = 0; 
+        i2 = 1; 
+        j2 = 1; 
+        k2 = 0; 
+      } else if x0 >= z0 { 
+        // X Z Y order 
+        i1=1; 
+        j1=0; 
+        k1=0; 
+        i2=1; 
+        j2=0; 
+        k2=1; 
+      } else { 
+        // Z X Y order 
+        i1=0; 
+        j1=0; 
+        k1=1; 
+        i2=1; 
+        j2=0; 
+        k2=1; 
+      } 
+    } 
+    // x0 < y0 
+    else { 
+      if y0 < z0 {
+        // Z Y X order 
+        i1=0; 
+        j1=0; 
+        k1=1; 
+        i2=0; 
+        j2=1; 
+        k2=1; 
+      } else if x0 < z0 { 
+        // Y Z X order 
+        i1=0; 
+        j1=1; 
+        k1=0; 
+        i2=0; 
+        j2=1; 
+        k2=1; 
+      } else { 
+        // Y X Z order 
+        i1=0; 
+        j1=1; 
+        k1=0; 
+        i2=1; 
+        j2=1; 
+        k2=0;
+      } 
+    } 
+
+    // A step of (1,0,0) in (i,j,k) means a step of (1-c,-c,-c) in (x,y,z), 
+    // a step of (0,1,0) in (i,j,k) means a step of (-c,1-c,-c) in (x,y,z), and 
+    // a step of (0,0,1) in (i,j,k) means a step of (-c,-c,1-c) in (x,y,z), where 
+    // c = 1/6.
+
+    // Offsets for second corner in (x,y,z) coords
+    let x1 = x0 - i1 as f32 + G3;  
+    let y1 = y0 - j1 as f32 + G3; 
+    let z1 = z0 - k1 as f32 + G3; 
+
+    // Offsets for third corner in (x,y,z) coords 
+    let x2 = x0 - i2 as f32 + 2.0*G3; 
+    let y2 = y0 - j2 as f32 + 2.0*G3; 
+    let z2 = z0 - k2 as f32 + 2.0*G3; 
+
+    // Offsets for last corner in (x,y,z) coords 
+    let x3 = x0 - 1.0 + 3.0*G3;
+    let y3 = y0 - 1.0 + 3.0*G3; 
+    let z3 = z0 - 1.0 + 3.0*G3; 
+
+    // Work out the hashed gradient indices of the four simplex corners 
+    let ii = i as i32 & 255; 
+    let jj = j as i32 & 255; 
+    let kk = k as i32 & 255; 
+
+    let gi0 = self.perm[(ii + self.perm[(jj + self.perm[kk as usize] as i32) as usize] as i32) as usize] % 12; 
+    let gi1 = self.perm[(ii + i1 + self.perm[(jj + j1 + self.perm[(kk + k1) as usize] as i32) as usize] as i32) as usize] % 12; 
+    let gi2 = self.perm[(ii + i2 + self.perm[(jj + j2 + self.perm[(kk + k2) as usize] as i32) as usize] as i32) as usize] % 12; 
+    let gi3 = self.perm[(ii + 1 + self.perm [(jj + 1 + self.perm[kk as usize + 1] as i32) as usize] as i32) as usize] % 12; 
+    
+    // Calculate the contribution from the four corners 
+    let mut t0 = 0.6 - x0*x0 - y0*y0 - z0*z0; 
+    if t0 < 0.0 { 
+      n0 = 0.0; 
+    }
+    else { 
+      t0 *= t0; 
+      n0 = t0 * t0 * self.dot3(GRAD3[gi0 as usize], x0, y0, z0); 
+    }
+    let mut t1 = 0.6 - x1*x1 - y1*y1 - z1*z1; 
+    if t1 < 0.0 { 
+      n1 = 0.0; 
+    } else { 
+      t1 *= t1; 
+      n1 = t1 * t1 * self.dot3(GRAD3[gi1 as usize], x1, y1, z1); 
+    } 
+
+    let mut t2 = 0.6 - x2*x2 - y2*y2 - z2*z2; 
+    if t2 < 0.0 { 
+      n2 = 0.0; 
+    }
+    else { 
+      t2 *= t2; 
+      n2 = t2 * t2 * self.dot3(GRAD3[gi2 as usize], x2, y2, z2); 
+    } 
+
+    let mut t3 = 0.6 - x3*x3 - y3*y3 - z3*z3; 
+    if t3 < 0.0 {
+      n3 = 0.0; 
+    } else { 
+      t3 *= t3; 
+      n3 = t3 * t3 * self.dot3(GRAD3[gi3 as usize], x3, y3, z3); 
+    } 
+
+    // Add contributions from each corner to get the final noise value. 
+    // The result is scaled to stay just inside [-1,1] 
+    return 32.0*(n0 + n1 + n2 + n3); 
+
   }
 
 }
