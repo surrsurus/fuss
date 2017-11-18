@@ -79,6 +79,15 @@ $ cargo test
 
 to run all unit tests and doc tests.
 
+## Versioning
+
+fuss follows cargo's rules of Semantic Versioning:
+
+  - Before we reach 1.0.0, anything goes, but if we make breaking changes, we increment the minor version. In Rust, breaking changes include adding fields to structs or variants to enums.
+  - After 1.0.0, we only make breaking changes when we increment the major version.
+  - After 1.0.0, we don’t add any new public API (no new pub anything) in tiny versions. We always increment the minor version if you add any new pub structs, traits, fields, types, functions, methods or anything else.
+  - We use version numbers with three numeric parts such as 1.0.0 rather than 1.0.
+
 ## License
 
 This project is licensed under the MPPL 2.0 License - See the [LICENSE.md](LICENSE.md) file for details
