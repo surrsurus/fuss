@@ -15,7 +15,14 @@ use rand::{thread_rng, SeedableRng, Rng, StdRng};
 const G2 : f32 = 0.211324865;
 const F2 : f32 = 0.366025403;
 
+const GRAD3: [(i8, i8, i8); 12] = [
+  (1, 1, 0), (-1, 1, 0), (1, -1, 0), (-1, -1, 0),  
+  (1, 0, 1), (-1, 0, 1), (1, 0, -1), (-1, 0, -1),  
+  (0, 1, 1), (0, -1, 1), (0, 1, -1), (0, -1, -1),
+];
+
 // Generate a seed
+#[inline]
 fn generate_seed() -> Vec<usize> {
   let mut rng = thread_rng();
   rng.gen_iter::<usize>().take(256).collect::<Vec<usize>>()
@@ -35,7 +42,6 @@ pub struct Simplex {
 
   pub seed: Vec<usize>,
 
-  grad3: Vec<Vec<i8>>,
   perm: Vec<u8>,
 
 }
@@ -45,7 +51,7 @@ impl Simplex {
   ///
   /// Return a new `Simplex` with a new random permutation table
   /// 
-  /// Necessary to generate the proper permutation tables (grad3)
+  /// Necessary to generate the proper permutation tables (GRAD3)
   /// used by `noise_2d()` and `noise_3d`.
   /// 
   /// # Examples
@@ -101,12 +107,7 @@ impl Simplex {
   pub fn from_seed(seed: Vec<usize>) -> Simplex {
     let mut sn = Simplex { 
       seed: seed,
-      perm: Vec::new(), 
-      grad3: vec![
-        vec![1, 1, 0], vec![-1, 1, 0], vec![1, -1, 0], vec![-1, -1, 0],  
-        vec![1, 0, 1], vec![-1, 0, 1], vec![1, 0, -1], vec![-1, 0, -1],  
-        vec![0, 1, 1], vec![0, -1, 1], vec![0, 1, -1], vec![0, -1, -1]
-      ]
+      perm: Vec::new()
     };
     sn.generate_perms();
     return sn;
@@ -114,16 +115,18 @@ impl Simplex {
 
   ///
   /// Find dot product of a vector in 2 dimensions
-  /// 
-  fn dot2(&self, g: &[i8], x: f32, y: f32) -> f32 {
-    g[0] as f32 * x + g[1] as f32 * y
+  ///
+  #[inline]
+  fn dot2(&self, g: (i8, i8, i8), x: f32, y: f32) -> f32 {
+    g.0 as f32 * x + g.1 as f32 * y
   }
 
   ///
   /// Find dot product of a vector in 3 dimensions
   /// 
-  fn dot3(&self, g: &[i8], x: f32, y: f32, z: f32) -> f32 {
-    g[0] as f32 * x + g[1] as f32 * y + g[2] as f32 * z
+  #[inline]
+  fn dot3(&self, g: (i8, i8, i8), x: f32, y: f32, z: f32) -> f32 {
+    g.0 as f32 * x + g.1 as f32 * y + g.2 as f32 * z
   }
 
   ///
@@ -188,14 +191,14 @@ impl Simplex {
     } 
     else { 
       t0 *= t0; 
-      n0 = t0 * t0 * self.dot2(&self.grad3[gi0 as usize], x0, y0);  // (x,y) of grad3 used for 2D gradient 
+      n0 = t0 * t0 * self.dot2(GRAD3[gi0 as usize], x0, y0);  // (x,y) of GRAD3 used for 2D gradient 
     } 
     let mut t1 = 0.5 - x1*x1-y1*y1; 
     if t1 < 0. { 
       n1 = 0.0;
     } else { 
       t1 *= t1; 
-      n1 = t1 * t1 * self.dot2(&self.grad3[gi1 as usize], x1, y1); 
+      n1 = t1 * t1 * self.dot2(GRAD3[gi1 as usize], x1, y1); 
     }
     let mut t2 = 0.5 - x2*x2-y2*y2; 
     if t2 < 0.0 { 
@@ -203,7 +206,7 @@ impl Simplex {
     }
     else { 
       t2 *= t2; 
-      n2 = t2 * t2 * self.dot2(&self.grad3[gi2 as usize], x2, y2); 
+      n2 = t2 * t2 * self.dot2(GRAD3[gi2 as usize], x2, y2); 
     } 
 
     // Add contributions from each corner to get the final noise value. 
