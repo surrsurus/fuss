@@ -90,6 +90,6 @@ fuss follows cargo's rules of Semantic Versioning:
 
 ## License
 
-This project is licensed under the MPPL 2.0 License - See the [LICENSE.md](LICENSE.md) file for details
+This project is licensed under the MPPL 2.0 License - See the [LICENSE.md](LICENSE) file for details
 
 
