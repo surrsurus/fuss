@@ -1,4 +1,4 @@
-# fuss [![Build Status](https://travis-ci.org/surrsurus/fuss.svg?branch=master)](https://travis-ci.org/surrsurus/fuss) ![Language](https://img.shields.io/badge/rust-stable-orange.svg) [![License: MPL 2.0](https://img.shields.io/badge/License-MPL%202.0-brightgreen.svg)](https://opensource.org/licenses/MPL-2.0)
+# fuss [![Build Status](https://travis-ci.org/surrsurus/fuss.svg?branch=master)](https://travis-ci.org/surrsurus/fuss) [![Crates.io](https://img.shields.io/crates/v/fuss.svg)](https://crates.io/crates/fuss) ![Maintenance](https://img.shields.io/badge/maintenance-actively--developed-brightgreen.svg) [![License: MPL 2.0](https://img.shields.io/badge/License-MPL%202.0-brightgreen.svg)](https://opensource.org/licenses/MPL-2.0)
 
 Fuss - Small, lightweight simplex noise generator for Rust.
 
