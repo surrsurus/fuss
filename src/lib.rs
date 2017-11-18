@@ -66,7 +66,7 @@ impl Simplex {
   /// # Examples
   /// 
   /// ```
-  /// use simplex::Simplex;
+  /// use fuss::Simplex;
   /// 
   /// let sn = Simplex::new();
   /// ```
@@ -87,7 +87,7 @@ impl Simplex {
   /// # Examples
   /// 
   /// ```
-  /// use simplex::Simplex;
+  /// use fuss::Simplex;
   /// 
   /// let mut sn = Simplex::from_seed(vec![1, 2, 3]);
   /// let mut other_sn = Simplex::from_seed(vec![1, 2, 3]);
@@ -149,7 +149,7 @@ impl Simplex {
   /// # Examples
   /// 
   /// ```
-  /// use simplex::Simplex;
+  /// use fuss::Simplex;
   /// 
   /// let sn = Simplex::new();
   /// 
@@ -190,7 +190,7 @@ impl Simplex {
   /// # Examples
   /// 
   /// ```
-  /// use simplex::Simplex;
+  /// use fuss::Simplex;
   /// 
   /// let sn = Simplex::new();
   /// 
@@ -234,7 +234,7 @@ impl Simplex {
   /// # Examples
   /// 
   /// ```
-  /// use simplex::Simplex;
+  /// use fuss::Simplex;
   /// 
   /// let sn = Simplex::from_seed(vec![5, 3, 2, 1, 1]);
   /// println!("{}", sn.noise_2d(50.1912, 30.50102));
@@ -344,7 +344,7 @@ impl Simplex {
   /// # Examples
   /// 
   /// ```
-  /// use simplex::Simplex;
+  /// use fuss::Simplex;
   /// 
   /// let sn = Simplex::new();
   /// println!("{}", sn.noise_2d(50.1912, 30.50102));
