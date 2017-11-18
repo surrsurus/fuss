@@ -10,10 +10,12 @@ This library only provides functionality for generating 2D and 3D simplex noise,
 
 ### Prerequisites
 
-Add fuss to your `Cargo.toml`:
+Add fuss to your `Cargo.toml` in one of two ways:
 
 ```toml
 [dependencies]
+# Get the current stable
+fuss = "0.2.0"
 # Get the latest master version
 fuss = { git = "https://github.com/surrsurus/fuss.git" }
 ```
