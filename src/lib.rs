@@ -1,12 +1,12 @@
 //!
-//! Simple-Simplex - Small, lightweight simplex noise generator for Rust
+//! Fuss - Small, lightweight simplex noise generator for Rust
 //! 
 //! Ported from http://staffwww.itn.liu.se/~stegu/simplexnoise/simplexnoise.pdf
 //! originally in Java.
 //! 
 
 #![crate_type = "lib"]
-#![crate_name = "simplex"]
+#![crate_name = "fuss"]
 
 mod test;
 
