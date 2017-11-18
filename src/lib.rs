@@ -142,6 +142,48 @@ impl Simplex {
   }
 
   ///
+  /// Smooth the output from `noise_2d` based on fractal Brownian motion.
+  /// 
+  /// # Examples
+  /// 
+  /// ```
+  /// use simplex::Simplex;
+  /// 
+  /// let mut sn = Simplex::new();
+  /// 
+  /// let mut luminance = Vec::<Vec<f32>>::new();
+  /// for x in 0..100 {
+  ///   luminance.push(Vec::<f32>::new());
+  ///   for y in 0..100 {
+  ///     luminance[x as usize].push(sn.sum_octave_2d(16, x as f32, y as f32, 0.5, 0.008, 0, 255));
+  ///   }
+  /// }
+  /// ```
+  ///  
+  pub fn sum_octave_2d(&self, num_iterations: i32, xin: f32, yin: f32, persistence : f32, scale : f32, low : i32, high : i32) -> f32 {
+
+    let mut max_amp = 0.0;
+    let mut amp = 1.0;
+    let mut freq = scale;
+    let mut noise = 0.0;
+
+    // Add successively smaller, higher-frequency terms
+    for _ in 0..num_iterations {
+      noise += self.noise_2d(xin * freq, yin * freq) * amp;
+      max_amp += amp;
+      amp *= persistence;
+      freq *= 2.0;
+    }
+
+    // Take the average value of the iterations
+    noise /= max_amp;
+
+    // Normalize the result
+    return noise * ((high - low) / 2 + (high + low) / 2) as f32;
+
+  }
+    
+  ///
   /// Generate 2D simplex noise for a specific point
   /// 
   /// Returns a value in [-1, 1].
