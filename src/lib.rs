@@ -24,8 +24,7 @@ const GRAD3: [(i8, i8, i8); 12] = [
 // Generate a seed
 #[inline]
 fn generate_seed() -> Vec<usize> {
-  let mut rng = thread_rng();
-  rng.gen_iter::<usize>().take(256).collect::<Vec<usize>>()
+  thread_rng().gen_iter::<usize>().take(256).collect::<Vec<usize>>()
 }
 
 ///
@@ -76,13 +75,11 @@ impl Simplex {
   /// `noise_3d`
   /// 
   pub fn generate_perms(&mut self) {
-    let mut rng = StdRng::from_seed(&self.seed);
-    let p : Vec<u8> = rng.gen_iter().take(256).collect::<Vec<u8>>();
-    let mut perm = Vec::<u8>::new();
+    let p : Vec<u8> = StdRng::from_seed(&self.seed).gen_iter().take(256).collect::<Vec<u8>>();
+    self.perm = Vec::<u8>::new();
     for i in 0..512 {
-      perm.push(p[(i & 255) as usize]);
+      self.perm.push(p[(i & 255) as usize]);
     }
-    self.perm = perm;
   }
 
   ///
@@ -107,7 +104,7 @@ impl Simplex {
   pub fn from_seed(seed: Vec<usize>) -> Simplex {
     let mut sn = Simplex { 
       seed: seed,
-      perm: Vec::new()
+      perm: Vec::new() // Gets overwritten
     };
     sn.generate_perms();
     return sn;
