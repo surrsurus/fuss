@@ -144,6 +144,8 @@ impl Simplex {
   ///
   /// Smooth the output from `noise_2d` based on fractal Brownian motion.
   /// 
+  /// Returns an f32 in [-1, 1]
+  /// 
   /// # Examples
   /// 
   /// ```
@@ -179,11 +181,55 @@ impl Simplex {
     return noise / max_amp;
 
   }
+
+  ///
+  /// Smooth the output from `noise_3d` based on fractal Brownian motion.
+  /// 
+  /// Returns an f32 in [-1, 1]
+  /// 
+  /// # Examples
+  /// 
+  /// ```
+  /// use simplex::Simplex;
+  /// 
+  /// let mut sn = Simplex::new();
+  /// 
+  /// let mut luminance = Vec::<Vec<Vec<f32>>>::new();
+  /// for x in 0..10 {
+  ///   luminance.push(Vec::<Vec<f32>>::new());
+  ///   for y in 0..10 {
+  ///     luminance[x as usize].push(Vec::<f32>::new());
+  ///     for z in 0..10 {
+  ///       luminance[x as usize][y as usize].push(sn.sum_octave_3d(16, x as f32, y as f32, z as f32, 0.5, 0.008));
+  ///     }
+  ///   }
+  /// }
+  /// ```
+  ///  
+  pub fn sum_octave_3d(&self, num_iterations: i32, xin: f32, yin: f32, zin: f32, persistence : f32, scale : f32) -> f32 {
+
+    let mut max_amp = 0.0;
+    let mut amp = 1.0;
+    let mut freq = scale;
+    let mut noise = 0.0;
+
+    // Add successively smaller, higher-frequency terms
+    for _ in 0..num_iterations {
+      noise += self.noise_3d(xin * freq, yin * freq, zin * freq) * amp;
+      max_amp += amp;
+      amp *= persistence;
+      freq *= 2.0;
+    }
+
+    // Take the average value of the iterations
+    return noise / max_amp;
+
+  }
     
   ///
   /// Generate 2D simplex noise for a specific point
   /// 
-  /// Returns a value in [-1, 1].
+  /// Returns an f32 in [-1, 1].
   /// 
   /// # Examples
   /// 
@@ -295,7 +341,7 @@ impl Simplex {
   ///
   /// Generate 3D simplex noise for a specific point
   /// 
-  /// Returns a value in [-1, 1]. 
+  /// Returns an f32 in [-1, 1]. 
   /// 
   /// # Examples
   /// 
