@@ -155,12 +155,12 @@ impl Simplex {
   /// for x in 0..100 {
   ///   luminance.push(Vec::<f32>::new());
   ///   for y in 0..100 {
-  ///     luminance[x as usize].push(sn.sum_octave_2d(16, x as f32, y as f32, 0.5, 0.008, 0, 255));
+  ///     luminance[x as usize].push(sn.sum_octave_2d(16, x as f32, y as f32, 0.5, 0.008));
   ///   }
   /// }
   /// ```
   ///  
-  pub fn sum_octave_2d(&self, num_iterations: i32, xin: f32, yin: f32, persistence : f32, scale : f32, low : i32, high : i32) -> f32 {
+  pub fn sum_octave_2d(&self, num_iterations: i32, xin: f32, yin: f32, persistence : f32, scale : f32) -> f32 {
 
     let mut max_amp = 0.0;
     let mut amp = 1.0;
@@ -176,10 +176,7 @@ impl Simplex {
     }
 
     // Take the average value of the iterations
-    noise /= max_amp;
-
-    // Normalize the result
-    return noise * ((high - low) / 2 + (high + low) / 2) as f32;
+    return noise / max_amp;
 
   }
     
