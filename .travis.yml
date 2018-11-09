@@ -4,6 +4,7 @@ language: rust
 os:
   - linux
   - osx
+  - windows
 
 rust:
   - stable
@@ -14,6 +15,7 @@ matrix:
   fast_finish: true
   allow_failures:
     - rust: nightly
+    - rust: beta # Doesn't work occasionally on beta builds for OSX? Seems to be a travis issue
 
 script:
   - cargo build --verbose --all
