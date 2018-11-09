@@ -1,6 +1,6 @@
 [package]
 name = "fuss"
-version = "0.2.0"
+version = "0.2.1"
 authors = ["gray"]
 
 # A short blurb about the package. This is not rendered in any format when

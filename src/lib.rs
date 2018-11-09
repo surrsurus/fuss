@@ -31,9 +31,27 @@ const GRAD3: [(i8, i8, i8); 12] = [
   (0, 1, 1), (0, -1, 1), (0, 1, -1), (0, -1, -1),
 ];
 
+// Vector math
+
+///
+/// Find dot product of a vector in 2 dimensions
+///
+#[inline]
+fn dot2(g: (i8, i8, i8), x: f32, y: f32) -> f32 {
+  g.0 as f32 * x + g.1 as f32 * y
+}
+
+///
+/// Find dot product of a vector in 3 dimensions
+/// 
+#[inline]
+fn dot3(g: (i8, i8, i8), x: f32, y: f32, z: f32) -> f32 {
+  g.0 as f32 * x + g.1 as f32 * y + g.2 as f32 * z
+}
+
 // Generate a seed
 #[inline]
-fn generate_seed() -> Vec<usize> {
+pub fn generate_seed() -> Vec<usize> {
   thread_rng().gen_iter::<usize>().take(256).collect::<Vec<usize>>()
 }
 
@@ -126,22 +144,6 @@ impl Simplex {
   }
 
   ///
-  /// Find dot product of a vector in 2 dimensions
-  ///
-  #[inline]
-  fn dot2(&self, g: (i8, i8, i8), x: f32, y: f32) -> f32 {
-    g.0 as f32 * x + g.1 as f32 * y
-  }
-
-  ///
-  /// Find dot product of a vector in 3 dimensions
-  /// 
-  #[inline]
-  fn dot3(&self, g: (i8, i8, i8), x: f32, y: f32, z: f32) -> f32 {
-    g.0 as f32 * x + g.1 as f32 * y + g.2 as f32 * z
-  }
-
-  ///
   /// Smooth the output from `noise_2d` based on fractal Brownian motion.
   /// 
   /// Returns an f32 in [-1, 1]
@@ -162,7 +164,7 @@ impl Simplex {
   /// }
   /// ```
   ///  
-  pub fn sum_octave_2d(&self, num_iterations: i32, xin: f32, yin: f32, persistence : f32, scale : f32) -> f32 {
+  pub fn sum_octave_2d(&self, num_iterations: isize, xin: f32, yin: f32, persistence : f32, scale : f32) -> f32 {
 
     let mut max_amp = 0.0;
     let mut amp = 1.0;
@@ -206,7 +208,7 @@ impl Simplex {
   /// }
   /// ```
   ///  
-  pub fn sum_octave_3d(&self, num_iterations: i32, xin: f32, yin: f32, zin: f32, persistence : f32, scale : f32) -> f32 {
+  pub fn sum_octave_3d(&self, num_iterations: isize, xin: f32, yin: f32, zin: f32, persistence : f32, scale : f32) -> f32 {
 
     let mut max_amp = 0.0;
     let mut amp = 1.0;
@@ -258,8 +260,8 @@ impl Simplex {
 
     // Hairy factor for 2D 
     let s = (xin + yin) * F2;
-    let i = (xin + s).floor() as i32;
-    let j = (yin + s).floor() as i32;
+    let i = (xin + s).floor() as isize;
+    let j = (yin + s).floor() as isize;
 
     let t = (i + j) as f32 * G2;
 
@@ -272,8 +274,8 @@ impl Simplex {
     // Determine which simplex we are in. 
 
     // Offsets for second (middle) corner of simplex in (i,j) coords 
-    let i1 : i32;
-    let j1 : i32; 
+    let i1 : isize;
+    let j1 : isize; 
 
     // lower triangle, XY order: (0,0)->(1,0)->(1,1) 
     if x0 > y0 {
@@ -301,16 +303,16 @@ impl Simplex {
     // Work out the hashed gradient indices of the three simplex corners 
     let ii = i & 255; 
     let jj = j & 255; 
-    let gi0 = self.perm[(ii +    self.perm[jj as usize] as i32) as usize ] % 12; 
-    let gi1 = self.perm[(ii + i1 + self.perm[(jj + j1) as usize] as i32) as usize ] % 12; 
-    let gi2 = self.perm[(ii + 1 + self.perm[ (jj + 1) as usize] as i32) as usize] % 12; 
+    let gi0 = self.perm[(ii +    self.perm[jj as usize] as isize) as usize ] % 12; 
+    let gi1 = self.perm[(ii + i1 + self.perm[(jj + j1) as usize] as isize) as usize ] % 12; 
+    let gi2 = self.perm[(ii + 1 + self.perm[ (jj + 1) as usize] as isize) as usize] % 12; 
     
     let mut t0 = 0.5 - x0*x0-y0*y0; 
     if t0 < 0.0 {
       n0 = 0.0;
     } else { 
       t0 *= t0; 
-      n0 = t0 * t0 * self.dot2(GRAD3[gi0 as usize], x0, y0);
+      n0 = t0 * t0 * dot2(GRAD3[gi0 as usize], x0, y0);
     } 
 
     let mut t1 = 0.5 - x1*x1-y1*y1; 
@@ -318,7 +320,7 @@ impl Simplex {
       n1 = 0.0;
     } else { 
       t1 *= t1; 
-      n1 = t1 * t1 * self.dot2(GRAD3[gi1 as usize], x1, y1); 
+      n1 = t1 * t1 * dot2(GRAD3[gi1 as usize], x1, y1); 
     }
 
     let mut t2 = 0.5 - x2*x2-y2*y2; 
@@ -327,7 +329,7 @@ impl Simplex {
     }
     else { 
       t2 *= t2; 
-      n2 = t2 * t2 * self.dot2(GRAD3[gi2 as usize], x2, y2); 
+      n2 = t2 * t2 * dot2(GRAD3[gi2 as usize], x2, y2); 
     } 
 
     // Add contributions from each corner to get the final noise value. 
@@ -387,14 +389,14 @@ impl Simplex {
     // Determine which simplex we are in. 
 
     // Offsets for second corner of simplex in (i,j,k) coords 
-    let i1 : i32;
-    let j1 : i32;
-    let k1 : i32; 
+    let i1 : isize;
+    let j1 : isize;
+    let k1 : isize; 
 
     // Offsets for third corner of simplex in (i,j,k) coords 
-    let i2 : i32;
-    let j2 : i32;
-    let k2 : i32;
+    let i2 : isize;
+    let j2 : isize;
+    let k2 : isize;
 
     if x0 >= y0 { 
       if y0 >= z0 { 
@@ -473,14 +475,14 @@ impl Simplex {
     let z3 = z0 - 1.0 + 3.0*G3; 
 
     // Work out the hashed gradient indices of the four simplex corners 
-    let ii = i as i32 & 255; 
-    let jj = j as i32 & 255; 
-    let kk = k as i32 & 255; 
+    let ii = i as isize & 255; 
+    let jj = j as isize & 255; 
+    let kk = k as isize & 255; 
 
-    let gi0 = self.perm[(ii + self.perm[(jj + self.perm[kk as usize] as i32) as usize] as i32) as usize] % 12; 
-    let gi1 = self.perm[(ii + i1 + self.perm[(jj + j1 + self.perm[(kk + k1) as usize] as i32) as usize] as i32) as usize] % 12; 
-    let gi2 = self.perm[(ii + i2 + self.perm[(jj + j2 + self.perm[(kk + k2) as usize] as i32) as usize] as i32) as usize] % 12; 
-    let gi3 = self.perm[(ii + 1 + self.perm [(jj + 1 + self.perm[kk as usize + 1] as i32) as usize] as i32) as usize] % 12; 
+    let gi0 = self.perm[(ii + self.perm[(jj + self.perm[kk as usize] as isize) as usize] as isize) as usize] % 12; 
+    let gi1 = self.perm[(ii + i1 + self.perm[(jj + j1 + self.perm[(kk + k1) as usize] as isize) as usize] as isize) as usize] % 12; 
+    let gi2 = self.perm[(ii + i2 + self.perm[(jj + j2 + self.perm[(kk + k2) as usize] as isize) as usize] as isize) as usize] % 12; 
+    let gi3 = self.perm[(ii + 1 + self.perm [(jj + 1 + self.perm[kk as usize + 1] as isize) as usize] as isize) as usize] % 12; 
     
     // Calculate the contribution from the four corners 
     let mut t0 = 0.6 - x0*x0 - y0*y0 - z0*z0; 
@@ -489,14 +491,14 @@ impl Simplex {
     }
     else { 
       t0 *= t0; 
-      n0 = t0 * t0 * self.dot3(GRAD3[gi0 as usize], x0, y0, z0); 
+      n0 = t0 * t0 * dot3(GRAD3[gi0 as usize], x0, y0, z0); 
     }
     let mut t1 = 0.6 - x1*x1 - y1*y1 - z1*z1; 
     if t1 < 0.0 { 
       n1 = 0.0; 
     } else { 
       t1 *= t1; 
-      n1 = t1 * t1 * self.dot3(GRAD3[gi1 as usize], x1, y1, z1); 
+      n1 = t1 * t1 * dot3(GRAD3[gi1 as usize], x1, y1, z1); 
     } 
 
     let mut t2 = 0.6 - x2*x2 - y2*y2 - z2*z2; 
@@ -505,7 +507,7 @@ impl Simplex {
     }
     else { 
       t2 *= t2; 
-      n2 = t2 * t2 * self.dot3(GRAD3[gi2 as usize], x2, y2, z2); 
+      n2 = t2 * t2 * dot3(GRAD3[gi2 as usize], x2, y2, z2); 
     } 
 
     let mut t3 = 0.6 - x3*x3 - y3*y3 - z3*z3; 
@@ -513,7 +515,7 @@ impl Simplex {
       n3 = 0.0; 
     } else { 
       t3 *= t3; 
-      n3 = t3 * t3 * self.dot3(GRAD3[gi3 as usize], x3, y3, z3); 
+      n3 = t3 * t3 * dot3(GRAD3[gi3 as usize], x3, y3, z3); 
     } 
 
     // Add contributions from each corner to get the final noise value. 

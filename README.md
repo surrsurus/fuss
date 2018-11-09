@@ -15,7 +15,7 @@ Add fuss to your `Cargo.toml`:
 ```toml
 [dependencies]
 # Get the current stable
-fuss = "0.2.0"
+fuss = "0.2.1"
 ```
 
 ### Examples
