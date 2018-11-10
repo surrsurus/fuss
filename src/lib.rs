@@ -25,6 +25,14 @@ const F3 : f32 = 1.0/3.0;
 // Unskew 3D
 const G3 : f32 = 1.0/6.0;
 
+// "For the noise function to be repeatable, i.e. always yield the same value f
+// or a given input point, gradients need to be pseudo-random, not truly random. 
+// They need to have enough variation to conceal the fact that the function is not 
+// truly random, but too much variation will cause unpre- dictable behaviour for 
+// the  noise function. A good choice for 2D and higher is to pick gradients of unit 
+// length but different directions. For 2D, 8 or 16 gradients distributed around 
+// the unit circle is a good choice. For 3D, Ken Perlin’s recommended set of gradients is 
+// the midpoints of each of the 12 edges of a cube centered on the origin."
 const GRAD3: [(i8, i8, i8); 12] = [
   (1, 1, 0), (-1, 1, 0), (1, -1, 0), (-1, -1, 0),  
   (1, 0, 1), (-1, 0, 1), (1, 0, -1), (-1, 0, -1),  
@@ -47,12 +55,6 @@ fn dot2(g: (i8, i8, i8), x: f32, y: f32) -> f32 {
 #[inline]
 fn dot3(g: (i8, i8, i8), x: f32, y: f32, z: f32) -> f32 {
   g.0 as f32 * x + g.1 as f32 * y + g.2 as f32 * z
-}
-
-// Generate a seed
-#[inline]
-pub fn generate_seed() -> Vec<usize> {
-  thread_rng().gen_iter::<usize>().take(256).collect::<Vec<usize>>()
 }
 
 ///
@@ -91,7 +93,8 @@ impl Simplex {
   /// 
   pub fn new() -> Simplex {
 
-    return Simplex::from_seed(generate_seed());
+    let seed = thread_rng().gen_iter::<usize>().take(256).collect::<Vec<usize>>();
+    return Simplex::from_seed(seed);
 
   }
 
