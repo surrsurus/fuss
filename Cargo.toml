@@ -56,7 +56,7 @@ license = "MPL-2.0"
 
 # Travis CI: `repository` in format "<user>/<project>" is required.
 # `branch` is optional; default is `master`
-travis-ci = { repository = "https://github.com/surrsurus/fuss", branch = "master" }
+travis-ci = { repository = "surrsurus/fuss", branch = "master" }
 
 # Maintenance: `status` is required Available options are `actively-developed`,
 # `passively-maintained`, `as-is`, `none`, `experimental`, `looking-for-maintainer`
