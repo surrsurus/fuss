@@ -11,7 +11,7 @@
 mod test;
 
 extern crate rand;
-use rand::{thread_rng, SeedableRng, Rng, StdRng};
+use rand::{thread_rng, SeedableRng, RngCore};
 
 // Constants
 
@@ -69,8 +69,6 @@ fn dot3(g: (i8, i8, i8), x: f32, y: f32, z: f32) -> f32 {
 /// 
 pub struct Simplex {
 
-  pub seed: Vec<usize>,
-
   perm: Vec<u8>,
 
 }
@@ -79,85 +77,91 @@ impl Simplex {
 
   ///
   /// Return a new `Simplex` with a new random permutation table
-  /// 
+  ///
   /// Necessary to generate the proper permutation tables (GRAD3)
   /// used by `noise_2d()` and `noise_3d`.
-  /// 
+  ///
   /// # Examples
-  /// 
+  ///
   /// ```
+  /// extern crate rand_xoshiro;
   /// use fuss::Simplex;
-  /// 
-  /// let sn = Simplex::new();
+  /// use rand_xoshiro::Xoshiro256Plus;
+  ///
+  /// let sn = Simplex::new::<Xoshiro256Plus>();
   /// ```
-  /// 
-  pub fn new() -> Simplex {
+  ///
+  pub fn new<R: SeedableRng + RngCore>() -> Self {
 
-    let seed = thread_rng().gen_iter::<usize>().take(256).collect::<Vec<usize>>();
-    return Simplex::from_seed(seed);
+    let mut seed = R::Seed::default();
+    thread_rng().fill_bytes(&mut seed.as_mut());
+
+    return Self::from_seed::<R>(seed);
 
   }
 
   ///
-  /// Seed the random number generator with a specific 
+  /// Seed the random number generator with a specific
   /// seed
-  /// 
+  ///
   /// A seed is just a vector of usizes that will be passed into
   /// `StdRng::from_seed` as a slice.
-  /// 
+  ///
   /// # Examples
-  /// 
+  ///
   /// ```
+  /// extern crate rand_xoshiro;
   /// use fuss::Simplex;
-  /// 
-  /// let mut sn = Simplex::from_seed(vec![1, 2, 3]);
-  /// let mut other_sn = Simplex::from_seed(vec![1, 2, 3]);
-  /// 
+  /// use rand_xoshiro::Xoshiro256Plus;
+  ///
+  /// let mut sn = Simplex::from_seed::<Xoshiro256Plus>([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32]);
+  /// let mut other_sn = Simplex::from_seed::<Xoshiro256Plus>([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32]);
+  ///
   /// assert_eq!(other_sn.noise_2d(1.0, 14.2), sn.noise_2d(1.0, 14.2));
   /// assert_eq!(other_sn.noise_3d(1.0, 14.2, -5.4), sn.noise_3d(1.0, 14.2, -5.4));
-  /// 
-  /// sn = Simplex::from_seed(vec![4, 5, 6]);
-  /// let mut other_sn = Simplex::from_seed(vec![1, 2, 3]);
+  ///
+  /// sn = Simplex::from_seed::<Xoshiro256Plus>([5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36]);
+  /// let mut other_sn = Simplex::from_seed::<Xoshiro256Plus>([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32]);
   /// assert!(other_sn.noise_2d(1.0, 14.2) != sn.noise_2d(1.0, 14.2));
   /// assert!(other_sn.noise_3d(1.0, 14.2, -5.4) != sn.noise_3d(1.0, 14.2, -5.4));
   /// ```
-  /// 
-  pub fn from_seed(seed: Vec<usize>) -> Simplex {
-    let mut sn = Simplex { 
-      seed: seed,
-      perm: Vec::new() // Gets overwritten
-    };
-    sn.generate_perms();
-    return sn;
-  }
-
   ///
-  /// Generate the permutation table
-  /// 
-  /// This method will overwrite the `Simplex`'s current `perm` vector
-  /// with another random permutation table used by `noise_2d()` and
-  /// `noise_3d`
-  /// 
-  fn generate_perms(&mut self) {
-    let p : Vec<u8> = StdRng::from_seed(&self.seed).gen_iter().take(256).collect::<Vec<u8>>();
-    self.perm = Vec::<u8>::new();
-    for i in 0..512 {
-      self.perm.push(p[(i & 255) as usize]);
+  pub fn from_seed<R: SeedableRng + RngCore>(seed: R::Seed) -> Self {
+    Simplex {
+      perm: Self::generate_perms::<R>(seed),
     }
   }
 
   ///
+  /// Generate the permutation table
+  ///
+  /// This method will overwrite the `Simplex`'s current `perm` vector
+  /// with another random permutation table used by `noise_2d()` and
+  /// `noise_3d`
+  ///
+  fn generate_perms<R: SeedableRng + RngCore>(seed: R::Seed) -> Vec<u8> {
+    let mut p = [0u8; 256];
+    R::from_seed(seed).fill_bytes(&mut p);
+    let mut perm = Vec::new();
+    perm.extend_from_slice(&p);
+    perm.extend_from_slice(&p);
+    perm
+  }
+
+  ///
   /// Smooth the output from `noise_2d` based on fractal Brownian motion.
-  /// 
+  ///
   /// Returns an f32 in [-1, 1]
-  /// 
+  ///
   /// # Examples
-  /// 
+  ///
   /// ```
+  /// extern crate rand_xoshiro;
   /// use fuss::Simplex;
-  /// 
-  /// let sn = Simplex::new();
-  /// 
+  /// use rand_xoshiro::Xoshiro256Plus;
+  ///
+  /// let sn = Simplex::new::<Xoshiro256Plus>();
+  ///
   /// let mut luminance = Vec::<Vec<f32>>::new();
   /// for x in 0..100 {
   ///   luminance.push(Vec::<f32>::new());
@@ -189,16 +193,19 @@ impl Simplex {
 
   ///
   /// Smooth the output from `noise_3d` based on fractal Brownian motion.
-  /// 
+  ///
   /// Returns an f32 in [-1, 1]
-  /// 
+  ///
   /// # Examples
-  /// 
+  ///
   /// ```
+  /// extern crate rand_xoshiro;
   /// use fuss::Simplex;
-  /// 
-  /// let sn = Simplex::new();
-  /// 
+  /// use rand_xoshiro::Xoshiro256Plus;
+  ///
+  ///
+  /// let sn = Simplex::new::<Xoshiro256Plus>();
+  ///
   /// let mut luminance = Vec::<Vec<Vec<f32>>>::new();
   /// for x in 0..10 {
   ///   luminance.push(Vec::<Vec<f32>>::new());
@@ -239,16 +246,18 @@ impl Simplex {
   /// # Examples
   /// 
   /// ```
+  /// extern crate rand_xoshiro;
   /// use fuss::Simplex;
-  /// 
-  /// let sn = Simplex::from_seed(vec![5, 3, 2, 1, 1]);
+  /// use rand_xoshiro::Xoshiro256Plus;
+  ///
+  /// let sn = Simplex::from_seed::<Xoshiro256Plus>([5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36]);
   /// println!("{}", sn.noise_2d(50.1912, 30.50102));
-  /// 
+  ///
   /// // Simplex will return the same thing for the same points
   /// assert_eq!(sn.noise_2d(1.5, -0.5), sn.noise_2d(1.5, -0.5));
-  /// 
-  /// let other_sn = Simplex::from_seed(vec![0, 1, 2, 3, 4, 5]);
-  /// 
+  ///
+  /// let other_sn = Simplex::from_seed::<Xoshiro256Plus>([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31]);
+  ///
   /// // However each `Simplex` has it's own set of permutations, therefore
   /// // each one is different. If you want consistency, try the `from_seed()` method.
   /// assert!(sn.noise_2d(1.5, -0.5) != other_sn.noise_2d(1.5, -0.5));
