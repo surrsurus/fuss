@@ -1,6 +1,6 @@
 [package]
 name = "fuss"
-version = "0.2.2"
+version = "0.3.0"
 authors = ["gray"]
 
 # A short blurb about the package. This is not rendered in any format when
@@ -63,5 +63,11 @@ travis-ci = { repository = "surrsurus/fuss", branch = "master" }
 # and `deprecated`.
 maintenance = { status = "actively-developed" }
 
+[features]
+wasm-bindgen = ["rand/wasm-bindgen"]
+
 [dependencies]
-rand = "0.3"
+rand = "0.6"
+
+[dev-dependencies]
+rand_xoshiro = "0.1"
