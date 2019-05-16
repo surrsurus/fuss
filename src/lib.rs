@@ -358,16 +358,18 @@ impl Simplex {
   /// # Examples
   /// 
   /// ```
+  /// extern crate rand_xoshiro;
   /// use fuss::Simplex;
-  /// 
-  /// let sn = Simplex::new();
+  /// use rand_xoshiro::Xoshiro256Plus;
+  ///
+  /// let sn = Simplex::new::<Xoshiro256Plus>();
   /// println!("{}", sn.noise_2d(50.1912, 30.50102));
   /// 
   /// // Simplex will return the same thing for the same points
   /// assert_eq!(sn.noise_3d(1.5, -0.5, 2.1), sn.noise_3d(1.5, -0.5, 2.1));
-  /// 
-  /// let other_sn = Simplex::new();
-  /// 
+  ///
+  /// let other_sn = Simplex::new::<Xoshiro256Plus>();
+  ///
   /// // However each `Simplex` has it's own set of permutations, therefore
   /// // each one is different. If you want consistency, try the `from_seed()` method.
   /// assert!(sn.noise_3d(1.5, -0.5, 2.1) != other_sn.noise_3d(1.5, -0.5, 2.1));
