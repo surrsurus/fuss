@@ -15,26 +15,40 @@ Add fuss to your `Cargo.toml`:
 ```toml
 [dependencies]
 # Get the current stable
-fuss = "0.2.2"
+fuss = "0.3.0"
 ```
+
+You also need a random number generator that implements `SeedableRng + RngCore` from the rand crate. For example:
+
+```toml
+[dependencies]
+# Get the current stable
+fuss = "0.3.0"
+# Get a fast, but non-cryptographic random number generator
+rand_xoshiro = "0.1"
+```
+
+The next section will use this generator in the examples.
 
 ### Examples
 
-All fuss interactions happen through the `Simplex` struct. 
+All fuss interactions happen through the `Simplex` struct.
 
 Here's how you get one:
 
 ```rust
 extern crate fuss;
+extern crate rand_xoshiro;
 use fuss::Simplex;
+use rand_xoshiro::Xoshiro256Plus;
 
-let sn = Simplex::new();
+let sn = Simplex::new::<Xoshiro256Plus>();
 ```
 
 `Simplex` lets you generate 2D and 3D noise.
 
 ```rust
-let sn = Simplex::new();
+let sn = Simplex::new::<Xoshiro256Plus>();
 sn.noise_2d(1.0, -1.0);
 sn.noise_3d(1.0, -1.0, 0.0);
 ```
@@ -42,7 +56,7 @@ sn.noise_3d(1.0, -1.0, 0.0);
 Which lets you generate noise for large sets of points:
 
 ```rust
-let sn = Simplex::new();
+let sn = Simplex::new::<Xoshiro256Plus>();
 
 let mut map = Vec::<Vec<Vec<f32>>>::new();
 for x in 0..10 {
@@ -56,18 +70,18 @@ for x in 0..10 {
 }
 ```
 
-`Simplex` generates it's own permutation table based on the rust RNG, however you can apply your own seed to get a `Simplex` as such:
+`Simplex` generates its own permutation table based on the thread-local RNG, however you can apply your own seed to get a `Simplex` as such:
 
 ```rust
-let sn = Simplex::from_seed(vec![0, 1, 2, 3, 4, 5]);
-let other_sn = Simplex::from_seed(vec![0, 1, 2, 3, 4, 5]);
+let sn = Simplex::from_seed::<Xoshiro256Plus>([0, 1, 2, 3, 4, 5, ...]);
+let other_sn = Simplex::from_seed::<Xoshiro256Plus>([0, 1, 2, 3, 4, 5, ...]);
 
 // The two simplexes will generate the same noise for the same points
 // if given the same RNG seed
 assert_eq!(sn.noise_2d(0.0, 0.0), other_sn.noise_2d(0.0, 0.0));
 ```
 
-`Simplex` uses the same type of seeds that `SeedableRng` does, being a slice of `usize`s, however to make this easier `Simplex` will accept a `Vec<usize>` instead.
+The type of the seed is `SeedableRng::Seed`, so it depends on which random number generator you're using. For `Xoshiro256Plus`, it's `[u8; 32]`.
 
 ### Running the tests
 
